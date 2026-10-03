@@ -40,7 +40,9 @@ O segundo comando **apaga e recria somente o banco local**, aplicando migrations
 
 O esquema usa `auth.users`, roles `anon`, `authenticated`, `service_role` e `auth.uid()` do Supabase. Para PostgreSQL independente será necessário integrar identidade/roles equivalentes; não basta aplicar os arquivos sobre um banco vazio sem Auth.
 
-Não foi criado nem modificado um projeto Supabase remoto. Para futuras migrations use `pnpm exec supabase migration new nome`. Não altere migrations já aplicadas. Tipos de banco devem ser gerados pelo CLI quando houver uma stack local/real disponível.
+O projeto de desenvolvimento `car3-cotacao-fipe-dev` está ativo na região São Paulo, referência `ebamdurxekaoahigslgu`. [Abrir dashboard](https://supabase.com/dashboard/project/ebamdurxekaoahigslgu).
+
+As três migrations e o seed foram aplicados e verificados em 03/10/2026. Os prefixos dos arquivos foram alinhados às versões registradas pelo conector Supabase, para evitar reaplicação pelo CLI. Para futuras migrations use `pnpm exec supabase migration new nome`. Não altere migrations já aplicadas. As credenciais ainda devem ser configuradas no ambiente do servidor; não estão no repositório.
 
 ## Arquitetura
 
@@ -115,6 +117,10 @@ Ainda não especificados: cobrança de excedentes (eventos, proporcionalidade e 
 
 Vitest testa as fórmulas, taxas por categoria, franquias, frações de centavo, limites de entradas, arredondamento para cima, imutabilidade do snapshot e integração com providers/repositórios de teste.
 
-Os testes SQL executam as migrations e o seed no PostgreSQL via PGlite/WASM, emulando somente as identidades e roles Supabase necessárias. Testam integridade referencial, snapshot obrigatório, totais consistentes, triggers, RLS, RPC e idempotência do seed. Isso não testa o serviço Auth/REST real nem substitui a validação com `supabase start`: Docker e credenciais remotas não estavam disponíveis durante esta implementação.
+Os testes SQL automatizados executam as migrations e o seed no PostgreSQL via PGlite/WASM, emulando somente as identidades e roles Supabase necessárias. Testam integridade referencial, snapshot obrigatório, totais consistentes, triggers, RLS, RPC e idempotência do seed.
+
+Também foi executado um teste transacional no banco Supabase real: emissão pela role `service_role`, correspondência de parâmetros, bloqueio de alteração do snapshot, rejeição de cotação sem snapshot, rejeição de cliente de outro usuário e isolamento RLS com dois usuários. O teste usou `ROLLBACK`; nenhum usuário, cliente ou cotação de teste permaneceu no banco. Login e acesso HTTP pela aplicação ainda não foram validados.
+
+O advisor não apontou avisos de segurança de nível WARN/ERROR. O aviso informativo de RLS sem policy no cache FIPE é intencional: acesso somente pelo backend. Os dois índices compostos apontados pelo advisor foram adicionados. Índices ainda sem uso são esperados no banco novo. [Aviso sobre RLS sem policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [índices sem uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
 
 Referências: [PWA no Next.js](https://nextjs.org/docs/app/guides/progressive-web-apps), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [chaves Supabase](https://supabase.com/docs/guides/api/api-keys).
