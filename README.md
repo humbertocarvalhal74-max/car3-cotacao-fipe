@@ -42,7 +42,7 @@ O esquema usa `auth.users`, roles `anon`, `authenticated`, `service_role` e `aut
 
 O projeto de desenvolvimento `car3-cotacao-fipe-dev` está ativo na região São Paulo, referência `ebamdurxekaoahigslgu`. [Abrir dashboard](https://supabase.com/dashboard/project/ebamdurxekaoahigslgu).
 
-As três migrations e o seed foram aplicados e verificados em 03/10/2026. Os prefixos dos arquivos foram alinhados às versões registradas pelo conector Supabase, para evitar reaplicação pelo CLI. Para futuras migrations use `pnpm exec supabase migration new nome`. Não altere migrations já aplicadas. As credenciais ainda devem ser configuradas no ambiente do servidor; não estão no repositório.
+As quatro migrations e o seed foram aplicados em 03/10/2026. Os prefixos dos arquivos foram alinhados às versões registradas pelo conector Supabase, para evitar reaplicação pelo CLI. Para futuras migrations use `pnpm exec supabase migration new nome`. Não altere migrations já aplicadas. As credenciais devem ser configuradas no ambiente do servidor; não estão no repositório.
 
 ## Arquitetura
 
@@ -59,7 +59,29 @@ tests/                         fórmulas, snapshots, provider, aplicação e Pos
 
 O motor não importa React, Next.js, Supabase nem fornecedor FIPE. `FipeProvider` retorna valor em centavos e metadados de consulta (código, ano, mês, fornecedor, instante). O adapter real, as regras de expiração do cache e a seleção de fornecedor ficam para a próxima etapa. Nenhuma chamada a fornecedor ocorre agora.
 
-`issueAuthenticatedQuotation` é o ponto de entrada preparado para um futuro handler: verifica o token com Supabase Auth, identifica o usuário, consulta os parâmetros, chama o provider e persiste o resultado. Não existe endpoint HTTP de emissão nem fluxo visual de login nesta etapa. A seleção da categoria IPVA é explícita; não inferimos diesel pelo nome do veículo.
+`issueAuthenticatedQuotation` verifica o token com Supabase Auth, identifica o usuário, verifica a propriedade do cliente, consulta os parâmetros, chama o provider e persiste o resultado. A seleção da categoria IPVA é explícita; não inferimos diesel pelo nome do veículo.
+
+## Validação técnica pela aplicação
+
+O endereço `/dev` oferece formulários simples para login, perfil, cliente e cotação de teste; não é a interface final. Configure `APP_ORIGIN` com a origem exata (localmente `http://localhost:3000`) e `CAR3_ENABLE_DEV_FIXTURE=true` somente no projeto CAR3 dev. Em outros projetos a fixture e a página são bloqueadas. O template mantém a fixture desativada.
+
+Autenticação por email/senha ocorre no servidor via `@supabase/ssr`. Tokens ficam em cookies `HttpOnly`, `SameSite=Lax` e `Secure` no build de produção. O proxy renova os cookies da página técnica. Rotas verificam a identidade, protegem POSTs pela origem exata e devolvem respostas sem cache, tokens ou detalhes internos. Uma conta deve existir no Supabase Auth antes do login; a aplicação ainda não oferece cadastro ou recuperação de senha.
+
+| Rota | Função |
+| --- | --- |
+| POST `/api/auth/login` | Login sem devolver tokens no JSON |
+| POST `/api/auth/logout` | Encerrar a sessão atual |
+| GET `/api/auth/session` | Identidade autenticada |
+| POST `/api/profile` | Criar/atualizar o próprio nome |
+| GET/POST `/api/clientes` | Listar/criar clientes do usuário |
+| GET `/api/cotacoes` | Cotações do usuário; dinheiro como string |
+| POST `/api/dev/cotacoes` | Emissão com FIPE fixa de R$ 100.000, identificada como teste |
+
+A RPC de leitura usa `SECURITY INVOKER` e converte `bigint` para texto no SQL antes do transporte JSON, preservando centavos acima do limite seguro de `Number`. A emissão não aceita FIPE, preço ou proprietário enviados pelo browser. Clientes de outro usuário são recusados antes do cálculo. Não há fornecedor FIPE comercial selecionado.
+
+Para testar: preencha `SUPABASE_SECRET_KEY` somente em `.env.local`, reinicie a aplicação, acesse `/dev`, faça login, salve o perfil, crie um cliente fictício e emita a cotação. Carro com franquia de 1.000 km deve resultar em 320000 centavos (R$ 3.200). A cotação e seu snapshot são gravados no banco de desenvolvimento e permanecem imutáveis.
+
+Validação realizada nesta etapa: 80 testes automatizados aprovados, build concluído, página técnica carregada no navegador sem erros de console, rotas não autenticadas com HTTP 401 e login sem origem autorizada com HTTP 403. Login com credenciais válidas e emissão completa pela aplicação aguardam a chave secreta e uma conta de teste.
 
 ## Regras confirmadas em 03/10/2026
 

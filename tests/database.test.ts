@@ -122,3 +122,21 @@ it('constraints recusam FK inválida e dinheiro negativo', async () => {
   await expect(db.exec(`insert into fipe_cache(provider,vehicle_type,fipe_code,model_year,reference_month,value_cents)
     values ('test','car','test','2020','2026-10-01',-1)`)).rejects.toThrow();
 });
+it('leitura mantém centavos exatos acima do limite seguro de Number e respeita RLS', async () => {
+  const id = '00000000-0000-4000-8000-000000000020';
+  const huge = '9007199254740993';
+  await db.transaction(async tx => {
+    await tx.exec(`insert into cotacoes(id,created_by,cliente_id,total_cents)
+      values ('${id}','${user}','${client}',${huge});`);
+    await tx.exec(insertSnapshot(id).replace(',100);',`,${huge});`));
+  });
+  await db.transaction(async tx => {
+    await tx.exec(`set local role authenticated; set local request.jwt.claim.sub = '${user}';`);
+    const result = await tx.query<{id:string;total_cents:string}>('select * from car3_list_quotes()');
+    expect(result.rows.find(r => r.id === id)?.total_cents).toBe(huge);
+  });
+  await db.transaction(async tx => {
+    await tx.exec("set local role authenticated; set local request.jwt.claim.sub = '00000000-0000-4000-8000-000000000010';");
+    expect((await tx.query('select * from car3_list_quotes()')).rows).toHaveLength(0);
+  });
+});

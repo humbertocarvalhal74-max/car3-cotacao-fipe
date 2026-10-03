@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { decodeCar3Parameters } from '../../domain/quote-car3';
 import type { ParameterRecord, QuotationRepository } from '../../application/issue-quotation';
 
-/** Cliente privilegiado exclusivamente no servidor, sem exposição por endpoint nesta etapa. */
+/** Cliente privilegiado exclusivamente no servidor, chamado após identidade e cliente verificados. */
 export function createQuotationRepository(): QuotationRepository {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
