@@ -1,0 +1,33 @@
+{
+  "name": "car3-cotacao-fipe",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:test": "vitest run tests/database.test.ts"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "@supabase/supabase-js": "2.117.2",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "4.1.18",
+    "@tailwindcss/postcss": "4.1.18",
+    "vitest": "4.0.18",
+    "@electric-sql/pglite": "0.3.14",
+    "supabase": "2.75.0"
+  }
+}
