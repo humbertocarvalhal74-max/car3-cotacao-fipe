@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createSessionClient } from '@/infrastructure/supabase/session';
 import { assertFixtureEnabled } from '@/application/http-validation';
+import { quotationMemory } from '@/application/quotation-memory';
 export const dynamic = 'force-dynamic';
 export default async function DevPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   try { assertFixtureEnabled(process.env.CAR3_ENABLE_DEV_FIXTURE, process.env.SUPABASE_URL); } catch { notFound(); }
@@ -27,6 +28,9 @@ export default async function DevPage({ searchParams }: { searchParams: Promise<
   ]);
   if (profiles.error || clients.error || parameters.error || quotes.error) return <main className="p-8">Não foi possível carregar os dados de validação.</main>;
   const rows = quotes.data as { id: string; cliente_id: string; total_cents: string; created_at: string }[];
+  const snapshots = rows.length ? await db.from('cotacao_snapshot')
+    .select('cotacao_id,rule_version,engine_version,parameter_version,parameters_json,input_json,fipe_json')
+    .in('cotacao_id',rows.map(q => q.id)) : {data:[],error:null};
   return <main className="max-w-3xl space-y-6 p-8">
     <h1 className="text-xl font-semibold">CAR3 — validação técnica</h1>
     <p>Conta: {user.email}. O formulário FIPE real consulta a Parallelum. O teste com FIPE fixa de R$ 100.000 usa um formulário separado.</p>
@@ -60,8 +64,24 @@ export default async function DevPage({ searchParams }: { searchParams: Promise<
       <p>Esta emissão grava uma cotação e um snapshot imutável no banco de desenvolvimento.</p>
       <button className="border p-2">Emitir cotação de teste</button>
     </form>}
-    <div><h2 className="font-semibold">Cotações da sua conta (centavos)</h2>
-      <ul>{rows.map(q => <li key={q.id}>{q.id}: {q.total_cents} centavos</li>)}</ul></div>
+    <section className="space-y-3"><h2 className="font-semibold">Cotações e memória de cálculo</h2>
+      <p>A memória usa o snapshot da emissão. Valores com ≈ têm frações de centavo truncadas somente para exibição; o cálculo mantém precisão integral.</p>
+      {rows.map(q => {
+        const snapshot = snapshots.data?.find(s => s.cotacao_id === q.id);
+        let memory;
+        try { if (snapshot) memory = quotationMemory(snapshot,q.total_cents); } catch { /* Não mostrar memória divergente. */ }
+        return <details key={q.id} className="border p-3">
+          <summary>Cotação {q.id} — {q.total_cents} centavos</summary>
+          {memory ? <div className="space-y-2 pt-3">
+            <p>Parâmetros: {memory.parameterVersion}. IPVA: {String(memory.category)}. Franquia: {memory.km}.</p>
+            <p>FIPE preservada: {JSON.stringify(snapshot?.fipe_json)}</p>
+            <table className="w-full text-left"><caption>Composição da mensalidade</caption><thead><tr><th>Componente</th><th>Valor</th></tr></thead>
+              <tbody>{memory.rows.map(([label,value]) => <tr key={label}><th className="font-normal">{label}</th><td>{value}</td></tr>)}</tbody></table>
+          </div> : <p>Memória indisponível para esta cotação. O total preservado permanece disponível.</p>}
+        </details>;
+      })}
+      {snapshots.error && <p>Não foi possível carregar os snapshots.</p>}
+    </section>
     <form action="/api/auth/logout" method="post"><button className="border p-2">Sair</button></form>
   </main>;
 }

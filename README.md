@@ -154,3 +154,9 @@ POST /api/cotacoes exige sessão e origem autorizada. Além de clienteId, parame
 Nesta etapa não há token, cache, fallback fictício nem política de validade introduzida. Cada emissão faz duas consultas com timeout total de 15 segundos; erros impedem a gravação. O snapshot existente preserva fornecedor parallelum-v2, consulta, valor e data da obtenção, além dos parâmetros CAR3 imutáveis. O painel /dev inclui formulário técnico para emissão real. Exemplo: Honda Civic EXL 2020 Flex, código 014090-2, ano 2020-5, mês 2026-10.
 
 Documentação: https://fipe.api.br/docs/consultando-a-api . As fórmulas CAR3 permanecem as aprovadas.
+
+## Memória de cálculo
+
+No painel /dev, abra uma cotação em Cotações e memória de cálculo. A memória lê input_json e parameters_json do snapshot com a sessão do usuário e RLS, sem consultar FIPE novamente nem usar parâmetros atuais. Versões desconhecidas ou total divergente não exibem memória. Componentes, base CAR3, margem, inadimplência e preço final são calculados pelo motor existente. Valores com ≈ são truncados para duas casas apenas na apresentação; o cálculo e o total comercial permanecem exatos.
+
+Testes cobrem carro nas três franquias, livre, diesel, moto, versões desconhecidas, parâmetros históricos e precisão monetária.
