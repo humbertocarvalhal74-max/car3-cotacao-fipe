@@ -8,7 +8,7 @@ export default async function DevPage({ searchParams }: { searchParams: Promise<
   const { data: { user } } = await db.auth.getUser();
   const { status } = await searchParams;
   const messages: Record<string,string> = { login: 'Login realizado.', logout: 'Sessão encerrada.',
-    profile: 'Perfil salvo.', cliente: 'Cliente criado.', cotacao: 'Cotação de teste emitida.' };
+    profile: 'Perfil salvo.', cliente: 'Cliente criado.', cotacao: 'Cotação de teste emitida.', cotacaoReal: 'Cotação com FIPE real emitida.' };
   if (!user) return <main className="max-w-xl space-y-4 p-8">
     <h1 className="text-xl font-semibold">CAR3 — validação técnica</h1>
     <p>Ambiente de desenvolvimento. Use uma conta já criada no Supabase Auth.</p>
@@ -29,7 +29,7 @@ export default async function DevPage({ searchParams }: { searchParams: Promise<
   const rows = quotes.data as { id: string; cliente_id: string; total_cents: string; created_at: string }[];
   return <main className="max-w-3xl space-y-6 p-8">
     <h1 className="text-xl font-semibold">CAR3 — validação técnica</h1>
-    <p>Conta: {user.email}. A FIPE usada neste teste é fixa em R$ 100.000 e não vem de um fornecedor.</p>
+    <p>Conta: {user.email}. O formulário FIPE real consulta a Parallelum. O teste com FIPE fixa de R$ 100.000 usa um formulário separado.</p>
     {status && messages[status] && <p role="status">{messages[status]}</p>}
     <form action="/api/profile" method="post" className="space-x-3">
       <label>Seu nome <input className="border p-2" name="nome" defaultValue={profiles.data?.nome ?? ''} maxLength={200} required /></label>
@@ -38,6 +38,19 @@ export default async function DevPage({ searchParams }: { searchParams: Promise<
     {profiles.data && <form action="/api/clientes" method="post" className="space-x-3">
       <label>Cliente de teste <input className="border p-2" name="nome" maxLength={200} required /></label>
       <button className="border p-2">Criar cliente</button>
+    </form>}
+    {!!clients.data?.length && parameters.data && <form action="/api/cotacoes" method="post" className="space-y-3">
+      <h2 className="font-semibold">Validação com FIPE real — Parallelum</h2>
+      <input type="hidden" name="parameterId" value={parameters.data.id} />
+      <label className="block">Cliente para FIPE real <select name="clienteId" className="border p-2">{clients.data.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></label>
+      <label className="block">Tipo de veículo <select name="vehicleType" className="border p-2"><option value="car">Carro</option><option value="motorcycle">Moto</option><option value="truck">Caminhão</option></select></label>
+      <label className="block">Código FIPE <input name="fipeCode" defaultValue="014090-2" required className="border p-2" /></label>
+      <label className="block">Ano-combustível <input name="modelYear" defaultValue="2020-5" required className="border p-2" /></label>
+      <label className="block">Mês FIPE <input name="referenceMonth" defaultValue="2026-10" required className="border p-2" /></label>
+      <label className="block">Categoria IPVA real <select name="ipvaCategory" className="border p-2"><option value="carro">Carro</option><option value="diesel">Diesel</option><option value="moto">Moto</option></select></label>
+      <label className="block">Franquia real <select name="franquia" className="border p-2"><option value="1000">1.000 km</option><option value="2000">2.000 km</option><option value="3000">3.000 km</option><option value="livre">Livre (4.000 km internos)</option></select></label>
+      <p>Exemplo: Honda Civic EXL 2020 Flex. O preço vem do servidor. Esta emissão grava uma cotação real e seu snapshot no banco de desenvolvimento.</p>
+      <button className="border p-2">Emitir cotação com FIPE real</button>
     </form>}
     {!!clients.data?.length && parameters.data && <form action="/api/dev/cotacoes" method="post" className="space-y-3">
       <input type="hidden" name="parameterId" value={parameters.data.id} />

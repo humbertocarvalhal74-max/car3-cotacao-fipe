@@ -146,3 +146,11 @@ Também foi executado um teste transacional no banco Supabase real: emissão pel
 O advisor não apontou avisos de segurança de nível WARN/ERROR. O aviso informativo de RLS sem policy no cache FIPE é intencional: acesso somente pelo backend. Os dois índices compostos apontados pelo advisor foram adicionados. Índices ainda sem uso são esperados no banco novo. [Aviso sobre RLS sem policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), [índices sem uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
 
 Referências: [PWA no Next.js](https://nextjs.org/docs/app/guides/progressive-web-apps), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [chaves Supabase](https://supabase.com/docs/guides/api/api-keys).
+
+## FIPE real — Parallelum v2
+
+POST /api/cotacoes exige sessão e origem autorizada. Além de clienteId, parameterId, franquia e ipvaCategory, informe vehicleType (car/motorcycle/truck), fipeCode, modelYear (ano-combustível, por exemplo 2020-5) e referenceMonth (YYYY-MM). O servidor resolve a referência, consulta e valida código, tipo, ano, combustível e mês. Converte preço textual diretamente para bigint em centavos; nenhum preço enviado pelo navegador é aceito.
+
+Nesta etapa não há token, cache, fallback fictício nem política de validade introduzida. Cada emissão faz duas consultas com timeout total de 15 segundos; erros impedem a gravação. O snapshot existente preserva fornecedor parallelum-v2, consulta, valor e data da obtenção, além dos parâmetros CAR3 imutáveis. O painel /dev inclui formulário técnico para emissão real. Exemplo: Honda Civic EXL 2020 Flex, código 014090-2, ano 2020-5, mês 2026-10.
+
+Documentação: https://fipe.api.br/docs/consultando-a-api . As fórmulas CAR3 permanecem as aprovadas.
