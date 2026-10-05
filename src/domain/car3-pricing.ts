@@ -15,9 +15,11 @@ function positiveInteger(value: number): bigint {
   if (!Number.isSafeInteger(value) || value <= 0) throw new Error('Inteiro positivo obrigatório.');
   return BigInt(value);
 }
-export function valorBaseCar3(fipeCents: Cents, descontoBps: string): Rational {
+export function valorBaseCar3(fipeCents: Cents, descontoBps: string, zeroKm = false): Rational {
   if (fipeCents < 0n) throw new Error('FIPE negativa.');
   const discount = rate(descontoBps);
+  if (typeof zeroKm !== 'boolean') throw new Error('Condição zero km inválida.');
+  if (zeroKm) return rational(fipeCents);
   return multiply(rational(fipeCents), rational(discount.denominator - discount.numerator, discount.denominator));
 }
 export function depreciacaoMensal(base: Rational, residualBps: string, meses: number): Rational {
@@ -41,7 +43,7 @@ export function custoVariavelKm(p: Car3Parameters): bigint {
   if (sum !== integer(p.custoVariavelTotalCentsKm)) throw new Error('Componentes divergentes do custo variável total.');
   return sum;
 }
-export interface Car3Input { fipeCents: Cents; ipvaCategory: 'carro' | 'diesel' | 'moto'; franquia: number | 'livre' }
+export interface Car3Input { fipeCents: Cents; ipvaCategory: 'carro' | 'diesel' | 'moto'; franquia: number | 'livre'; zeroKm?: boolean }
 /** Regras confirmadas pelo usuário, versionadas no snapshot. */
 export function calculateCar3(input: Car3Input, p: Car3Parameters) {
   if (p.margemInadimplencia !== 'acrescimo' || p.arredondamento !== 'cima' || p.custoVariavel !== 'franquia') {
@@ -53,7 +55,7 @@ export function calculateCar3(input: Car3Input, p: Car3Parameters) {
   if (input.franquia !== 'livre' && !p.franquiasKm.includes(km)) throw new Error('Franquia não prevista.');
   const ipvaRate = { carro: p.ipvaCarroAnoBps, diesel: p.ipvaDieselAnoBps, moto: p.ipvaMotoAnoBps }[input.ipvaCategory];
   if (!ipvaRate) throw new Error('Categoria IPVA inválida.');
-  const base = valorBaseCar3(input.fipeCents, p.descontoFipeBps);
+  const base = valorBaseCar3(input.fipeCents, p.descontoFipeBps, input.zeroKm);
   const breakdown = {
     depreciacao: depreciacaoMensal(base, p.residualBps, p.permanenciaFrotaMeses),
     capital: custoCapital(base, p.oportunidadeMesBps),

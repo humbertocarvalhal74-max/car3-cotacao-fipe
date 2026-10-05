@@ -160,3 +160,9 @@ Documentação: https://fipe.api.br/docs/consultando-a-api . As fórmulas CAR3 p
 No painel /dev, abra uma cotação em Cotações e memória de cálculo. A memória lê input_json e parameters_json do snapshot com a sessão do usuário e RLS, sem consultar FIPE novamente nem usar parâmetros atuais. Versões desconhecidas ou total divergente não exibem memória. Componentes, base CAR3, margem, inadimplência e preço final são calculados pelo motor existente. Valores com ≈ são truncados para duas casas apenas na apresentação; o cálculo e o total comercial permanecem exatos.
 
 Testes cobrem carro nas três franquias, livre, diesel, moto, versões desconhecidas, parâmetros históricos e precisão monetária.
+
+## Regra CAR3 v2 — carros zero km
+
+A partir de 04/10/2026, carros zero km usam valorBaseCar3 = valorFipe. Os demais mantêm valorFipe × (1 − descontoFipe). A condição é derivada no servidor do tipo car e do identificador FIPE 32000-combustível validado pelo fornecedor, não de um campo livre do navegador. Motos e caminhões mantêm a regra anterior.
+
+Novas emissões registram car3-pricing-v2 e context.zeroKm no snapshot. Cotações v1 não são alteradas e a memória histórica continua aplicando desconto como na emissão original. Depreciação e capital usam a base correspondente; IPVA e seguro continuam sobre FIPE. Teste de referência: FIPE R$ 100.000, carro, 1.000 km: usado R$ 3.200/mês, zero km R$ 3.300/mês.

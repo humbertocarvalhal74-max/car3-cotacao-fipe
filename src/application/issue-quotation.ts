@@ -23,7 +23,8 @@ export async function issueQuotation(deps: { fipe: FipeProvider; repository: Quo
   }
   if (!fipe.provider.trim() || !Number.isFinite(Date.parse(fipe.fetchedAt))) throw new Error('Metadados FIPE inválidos.');
   const result = quoteCar3({ fipeCents: fipe.valueCents,
-    ipvaCategory: request.ipvaCategory, franquia: request.franquia }, parameters);
+    ipvaCategory: request.ipvaCategory, franquia: request.franquia,
+    zeroKm: fipe.lookup.vehicleType === 'car' && /^32000-[1-6]$/.test(fipe.lookup.modelYear) }, parameters);
   const id = await deps.repository.persist({ ownerId: request.ownerId, clienteId: request.clienteId,
     parameterId: parameters.id, result,
     fipe: { lookup: { ...fipe.lookup }, provider: fipe.provider,
